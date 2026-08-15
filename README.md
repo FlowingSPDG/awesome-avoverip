@@ -280,7 +280,8 @@ A consolidated index of open-source AV over IP implementations, grouped by proto
 | [sony/nmos-cpp](https://github.com/sony/nmos-cpp) | NMOS Registry, Node, Connection API (IS-04, IS-05) in C++ |
 | [AMWA-TV/nmos-testing](https://github.com/AMWA-TV/nmos-testing) | Official NMOS API conformance testing tool |
 | [rhastie/easy-nmos](https://github.com/rhastie/easy-nmos) | Docker Compose NMOS lab (registry + node + testing) |
-| [AMWA-TV/nmos-js](https://github.com/AMWA-TV/nmos-js) | NMOS client library in JavaScript |
+| [sony/nmos-js](https://github.com/sony/nmos-js) | NMOS client UI/library in JavaScript (IS-04, IS-05) |
+| [bbc/nmos-web-router](https://github.com/bbc/nmos-web-router) | Web-based NMOS routing controller |
 
 ### NDI
 
