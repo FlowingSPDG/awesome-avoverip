@@ -111,20 +111,111 @@ ST 2110 defines essence transport only. **NMOS** handles discovery and routing:
 
 ## 3. NDI
 
-### Profiles
+### 3.1 Version Timeline
 
-| Profile | Method | 1080p60 bandwidth | Use |
-|---------|--------|-------------------|-----|
-| High Bandwidth | Proprietary (SHQ) | ~100–200 Mbps | Highest LAN quality |
-| HX / HX2 | H.264 | ~6–12 Mbps | Bandwidth-constrained |
-| HX3 | H.265/HEVC | ~4–8 Mbps | Lowest bandwidth |
+| Version | Year | Key additions |
+|---------|------|---------------|
+| NDI 1.0 | 2015 | Single TCP transport; mDNS discovery |
+| NDI 3 | ~2017 | UDP + Forward Error Correction |
+| NDI 4 | ~2019 | Multi-TCP (MPTCP); hardware TCP offload path |
+| NDI 5 | 2021 | **RUDP default**; NDI Bridge, Remote, Audio Direct |
+| NDI 5.6 | 2023 | RUDP refinements; [white paper](https://ndi.video/wp-content/uploads/2023/09/NDI-5.6-White-Paper-2023.pdf) |
+| NDI 6 | 2024 | Core tech refresh; HDR paths |
+| NDI 6.2 | 2025 | Discovery Server control layer; receiver-side registration |
+| NDI 6.3 | Jan 2026 | Advanced monitoring/control; HDCP for Pro AV; Agilex 7 FPGA; Sender Advertiser APIs |
 
-### Open Source Notes
+### 3.2 Transport Protocols by NDI Version
 
-NDI protocol is proprietary. OSS tools wrap the NDI SDK:
+NDI negotiates transport at connection time. If the peer doesn't support a mode, it **falls back to TCP** automatically.
 
-- **DistroAV** — GPL-2.0 OBS plugin; requires [NDI Runtime](https://ndi.video/)
-- No fully independent open NDI protocol implementation exists
+| Transport | Since | Mechanism | Best for | Avoid when |
+|-----------|-------|-----------|----------|------------|
+| **Single TCP** | NDI 1 | Standard TCP stream | Universal compatibility | High bandwidth / many streams (head-of-line blocking) |
+| **UDP + FEC** | NDI 3 | Unreliable UDP + forward error correction | Lossy links where retransmit latency is unacceptable | CPU budget on receiver is tight |
+| **Multi-TCP** | NDI 4 | Multipath TCP across NICs | Multi-1GbE bonded paths with HW TCP offload | Mixed 10G/1G links; shared with Dante (creates independent TCP buffers) |
+| **RUDP** | NDI 5+ (default) | Reliable UDP + aggregate multi-stream CC | Most LAN installs; wireless; high stream count | — (recommended default) |
+| **Multicast UDP+FEC** | All (opt-in) | IGMP multicast fan-out | True one-to-many on well-configured LAN | **Default off** — misconfigured IGMP = network-wide DoS |
+
+Configuration (Advanced SDK): per-instance JSON toggles for `rudp`, `multicast`, `tcp`, `udp` send/recv independently. See [configuration-files.md](https://docs.ndi.video/all/developing-with-ndi/sdk/configuration-files.md).
+
+### 3.3 RUDP Deep Dive
+
+**What official docs say:** RUDP combines UDP's low latency with TCP-like reliability via sequencing, selective retransmission, flow control, and congestion control — purpose-built for real-time multimedia ([NDI Protocols](https://docs.ndi.video/all/getting-started/white-paper/ndi-protocols)).
+
+**Multi-stream congestion control** (the distinguishing design choice):
+
+> All streams between a source are moved into a **single connection** across which congestion control is applied **in aggregate** to all streams at once. Streams are entirely non-blocking — loss on one stream cannot block others.
+
+This differs from running N independent TCP connections (NDI 1) or N independent UDP flows (raw) where each competes for bandwidth independently.
+
+**Kernel offload path:**
+- Windows: UDP Segmentation Offload (USO), receiver-side scaling
+- Linux: GSO / `UDP_SEGMENT` (kernel 4.18+) for send batching
+- Packet coalescing on receive to reduce per-packet overhead
+
+### 3.4 RUDP vs QUIC — Is NDI "QUIC-like"?
+
+**Short answer:** Conceptually similar goals; **not** IETF QUIC and **not** wire-compatible.
+
+| Dimension | NDI RUDP | IETF QUIC (RFC 9000) |
+|-----------|----------|----------------------|
+| Standardization | Proprietary (Vizrt NDI) | IETF open standard |
+| Primary use | LAN live video production | General internet transport; HTTP/3 |
+| Connection model | One aggregate CC context per NDI source | Connection with many bidirectional streams |
+| Reliability | Sequence numbers + selective ARQ | Per-stream + connection-level loss recovery |
+| Congestion control | Custom; aggregate across all NDI streams from source | Pluggable (RFC 9002); typically per-connection |
+| Encryption | Not TLS-integrated | Mandatory TLS 1.3 |
+| Handshake | NDI-specific (within SDK) | QUIC transport + TLS 1.3 (1-RTT / 0-RTT) |
+| NAT traversal | LAN-first; NDI Bridge for remote | Designed for internet path migration |
+| Multiplexing | All source streams share one CC pipe | Independent stream flow control within connection |
+
+**Why people say "QUIC-like":**
+1. Both run reliability on top of UDP instead of TCP
+2. Both multiplex multiple logical streams without head-of-line blocking
+3. Both implement modern congestion control (vs naive TCP over high-BDP links)
+4. Third-party articles (e.g. [AVNetwork 2021](https://www.avnetwork.com/news/how-ndi-5-impacts-avoip-remote-live-production)) have explicitly called RUDP "QUIC" — this is **not supported by official NDI technical documentation**, which never references RFC 9000 or QUIC by name
+
+**Practical implication:** You cannot point a QUIC client at an NDI source. NDI Bridge / Remote handle WAN traversal with NDI's own stack, not standard QUIC.
+
+### 3.5 Codec Profiles
+
+| Profile | Codec | 1080p60 bandwidth | Notes |
+|---------|-------|-------------------|-------|
+| High Bandwidth | SHQ (proprietary) | ~100–200 Mbps | Default quality path; YCbCr preferred |
+| HX | H.264 | ~8–12 Mbps | Camera firmware / embedded |
+| HX2 | H.264 (improved) | ~6–10 Mbps | HX successor |
+| HX3 | H.265/HEVC | ~4–8 Mbps | Advanced SDK; passthrough on supported hardware |
+
+### 3.6 Standard SDK vs Advanced SDK
+
+| Capability | Standard SDK | Advanced SDK |
+|------------|-------------|--------------|
+| Target | Software apps, hobbyists | Hardware OEMs, broadcast integrators |
+| License | Free (non-commercial request) | Commercial ([sales@ndi.video](mailto:sales@ndi.video)) |
+| HDR 10-bit+ | Limited | Full encode/decode |
+| HX3 passthrough/decode | — | ✓ |
+| KVM | — | ✓ |
+| Genlock / AV sync | — | ✓ |
+| JSON per-instance config | — | ✓ (transport, NIC, codec, discovery) |
+| FPGA IP / embedded | — | ✓ |
+| CLI recording | — | ✓ |
+| Certification path | NDI Certified program | NDI Advanced + certification |
+
+Sources: [SDK vs Advanced FAQ](https://docs.ndi.video/all/faq/sdk/what-are-the-differences-between-the-ndi-sdk-and-the-ndi-advanced-sdk), [Advanced SDK docs](https://docs.ndi.video/all/developing-with-ndi/advanced-sdk)
+
+### 3.7 Open Source Ecosystem
+
+| Repo | Role | Notes |
+|------|------|-------|
+| [DistroAV](https://github.com/DistroAV/DistroAV) | OBS integration | Requires NDI Runtime; GPL-2.0 |
+| [grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | Rust NDI 6 bindings | Apache-2.0; unofficial; async + PTZ |
+| [grafton-birddog](https://github.com/GrantSparks/grafton-birddog) | BirdDog camera API in Rust | Companion project |
+
+No independent open-source NDI protocol implementation exists — all tools require the proprietary NDI SDK/Runtime.
+
+### 3.8 Activity Snapshot (Aug 2026)
+
+See [`activity.md`](activity.md#ndi) for full metrics. Summary: **5/5 activity score** — NDI 6.3 shipped Jan 2026, 600+ vendors, DistroAV and grafton-ndi actively maintained.
 
 ---
 
@@ -168,6 +259,8 @@ Three components ([PROTOCOL.md](https://github.com/openmediatransport/libomtnet/
 | MikanseiLaboratory/vmx-rs | Rust | Community codec |
 | MikanseiLaboratory/omt-tools | Rust/Tauri | Tooling |
 
+**Activity:** 3/5 score, ↑↑ momentum — see [`activity.md`](activity.md#omt). Protocol age ~1 year; official repos actively pushed through mid-2026.
+
 ---
 
 ## 5. SRT
@@ -186,8 +279,10 @@ Three components ([PROTOCOL.md](https://github.com/openmediatransport/libomtnet/
 | 2000 ms+ | Stability-first | Unreliable links |
 
 ### Open Source
-- [Haivision/srt](https://github.com/Haivision/srt) — reference library
+- [Haivision/srt](https://github.com/Haivision/srt) — reference library (v1.5.6, Jul 2026)
 - Integrated in FFmpeg, GStreamer, OBS, VLC
+
+**Activity:** 5/5 score — see [`activity.md`](activity.md#srt). 650+ alliance members; libsrt maintained with regular releases.
 
 ---
 

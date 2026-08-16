@@ -7,6 +7,7 @@ Professional video and audio transport over IP networks spans many use cases —
 ## Contents
 
 - [Standards Map](#standards-map)
+- [Protocol Activity](#protocol-activity)
 - [SMPTE Family (ST 2001 / ST 2101 / ST 2110)](#smpte-family)
 - [NDI (Network Device Interface)](#ndi-network-device-interface)
 - [OMT (Open Media Transport)](#omt-open-media-transport)
@@ -36,7 +37,25 @@ Professional video and audio transport over IP networks spans many use cases —
 | [RAVENNA](#ravenna) | AoIP technology | Broadcast audio, ST 2110 integration | 1GbE+ | Very low | Open | Uncompressed PCM |
 | [SDVoE](#sdvoe) | Protocol | Meeting rooms, digital signage | 10GbE | <100 μs | Closed spec | Uncompressed 4K60 |
 
-> Detailed research: [`docs/research.md`](docs/research.md)
+> Detailed research: [`docs/research.md`](docs/research.md) · Activity metrics: [`docs/activity.md`](docs/activity.md)
+
+---
+
+## Protocol Activity
+
+| Protocol | Score | Momentum | Latest Release | Products / Scale |
+|----------|-------|----------|----------------|------------------|
+| NDI | 5/5 | ↑ | NDI 6.3 (Jan 2026) | 2,000+ products, 600+ vendors |
+| SRT | 5/5 | → | libsrt v1.5.6 (Jul 2026) | 650+ alliance members |
+| WebRTC/WHIP/WHEP | 5/5 | ↑ | RFC 9725 WHIP (2025) | Cloud + OBS native |
+| ST 2110 | 4/5 | ↑ | ST 2110-30:2025 | 100+ AIMS solutions |
+| RIST | 4/5 | ↑ | TR-06-3 (2022) | 150+ forum members |
+| Dante | 4/5 | → | Continuous | 400+ manufacturers |
+| OMT | 3/5 | ↑↑ | libomtnet v1.0.0.16 (Jun 2026) | vMix 29+, early adopters |
+| IPMX | 3/5 | ↑↑ | Certification began 2026 | Early certified products |
+| SDVoE | 3/5 | → | Stable since 2016 | 50+ alliance partners |
+
+Full metrics, OSS repo activity, and methodology: [`docs/activity.md`](docs/activity.md)
 
 ---
 
@@ -90,36 +109,99 @@ Among **ST 2001 / ST 2010 / ST 2101 / ST 2110**, their roles in AV over IP diffe
 
 ## NDI (Network Device Interface)
 
-[NDI](https://ndi.video/) is a LAN-oriented AV over IP protocol from Vizrt NDI. One of the most widely adopted Pro AV solutions.
+[NDI](https://ndi.video/) is a LAN-oriented AV over IP protocol from Vizrt NDI. One of the most widely adopted Pro AV solutions. Now operates as a standalone open standard (spun from Vizrt, 2025).
 
 | Item | Detail |
 |------|--------|
-| License | Free SDK; protocol spec is not public |
-| Latest | NDI 6.x (2024+) |
-| Discovery | mDNS |
-| Profiles | High Bandwidth, HX / HX2 / HX3 (H.264/HEVC) |
-| Strengths | Huge ecosystem, vMix/OBS/TriCaster integration |
-| Weaknesses | Closed spec, multicast design complexity at scale |
+| License | Free SDK (non-commercial); **Advanced SDK** is commercial |
+| Latest | **NDI 6.3** (Jan 2026); 6.3.1 follow-up |
+| Adoption | 2,000+ products, 600+ manufacturers; ~9k NDI Tools downloads/week |
+| Discovery | mDNS (default); NDI Discovery Server for large/cloud deployments |
+| Default transport (v5+) | **RUDP** (Reliable UDP) — see [research doc](docs/research.md#32-transport-protocols-by-ndi-version) |
+| Codec profiles | High Bandwidth (SHQ), HX / HX2 (H.264), HX3 (H.265) |
+| Strengths | Largest IP video ecosystem, sub-frame latency, vMix/OBS/TriCaster |
+| Weaknesses | Closed wire protocol; mDNS doesn't cross subnets without Discovery Server |
+
+### SDK Tiers
+
+| Feature | Standard SDK | Advanced SDK |
+|---------|-------------|--------------|
+| License | Free (non-commercial) | Commercial ([sales@ndi.video](mailto:sales@ndi.video)) |
+| LAN send/receive | ✓ | ✓ |
+| HDR encode/decode | Limited | ✓ (10-bit+) |
+| HX3 passthrough/decode | — | ✓ |
+| KVM | — | ✓ |
+| Genlock / AV sync | — | ✓ |
+| Per-instance JSON config | — | ✓ (transport, codec, NIC binding) |
+| FPGA / embedded IP | — | ✓ (Agilex 7, etc.) |
+| CLI recording | — | ✓ |
+| Transport toggles (RUDP/TCP/UDP/multicast) | Basic | Full per-instance control |
+
+→ [SDK vs Advanced SDK FAQ](https://docs.ndi.video/all/faq/sdk/what-are-the-differences-between-the-ndi-sdk-and-the-ndi-advanced-sdk)
+
+### Transport Protocols (by NDI version)
+
+| Version | Transport | Role |
+|---------|-----------|------|
+| NDI 1 | Single TCP | Baseline fallback; universal compatibility |
+| NDI 3 | UDP + FEC | Low-latency; error correction on lossy links |
+| NDI 4 | Multi-TCP (MPTCP) | Multi-NIC; hardware TCP offload |
+| NDI 5+ | **RUDP** (default) | Reliable UDP + multi-stream congestion control |
+| All | Multicast UDP+FEC | Optional fan-out; **disabled by default** (IGMP risk) |
+| All | TCP | Automatic fallback when peer lacks negotiated mode |
+
+### RUDP vs QUIC (investigation summary)
+
+NDI's RUDP is **not IETF QUIC** (RFC 9000). It is a **proprietary Reliable UDP** designed for LAN live production. Some third-party articles incorrectly equate RUDP with QUIC; official NDI documentation describes a custom protocol.
+
+| Aspect | NDI RUDP | IETF QUIC |
+|--------|----------|-----------|
+| Wire format | Proprietary (closed) | Standardized (RFC 9000) |
+| Runs on | UDP | UDP |
+| Reliability | Selective retransmit (sequence numbers) | Streams + loss recovery |
+| Congestion control | Multi-stream aggregate CC per source | Per-connection CC (BBR/Cubic) |
+| Multiplexing | All streams from one source → single connection | Multiple streams per connection |
+| Encryption | Not TLS-based | TLS 1.3 integrated |
+| HTTP/3 | No | Yes (native mapping) |
+| Design goal | LAN video at scale | General internet transport |
+
+**Conceptual similarity to QUIC:** Both solve "TCP is too slow for real-time media over UDP" by adding reliability, flow control, and congestion control on top of UDP. NDI RUDP's **aggregate multi-stream congestion control** (all NDI streams from one source share one CC context) is architecturally similar to QUIC's stream multiplexing — but the algorithms, handshake, and wire format are entirely different.
+
+Key RUDP behaviors ([official docs](https://docs.ndi.video/all/developing-with-ndi/sdk/performance-and-implementation)):
+- Non-blocking streams: packet loss on one stream doesn't block others
+- Packet coalescing + async send batching (reduces kernel overhead)
+- USO (UDP Segmentation Offload) on Windows; GSO/UDP_SEGMENT on Linux 4.18+
+- Receiver-side scaling for interrupt handling
 
 **Official resources:**
 - [NDI Product Finder](https://ndi.video/product-finder/)
-- [NDI Certified](https://ndi.video/certified/)
-- [NDI SDK docs](https://docs.ndi.video/)
+- [NDI Protocols white paper](https://docs.ndi.video/all/getting-started/white-paper/ndi-protocols)
+- [Performance & Implementation](https://docs.ndi.video/all/developing-with-ndi/sdk/performance-and-implementation)
+- [Advanced SDK docs](https://docs.ndi.video/all/developing-with-ndi/advanced-sdk)
+- [NDI 6 overview](https://ndi.video/tech/ndi6/)
 
 ### Products (selected)
 
-**Cameras / PTZ:** BirdDog, PTZOptics, Panasonic, Sony, Lumens, Marshall, JVC  
+**Cameras / PTZ:** BirdDog (first full NDI 6.3 hardware line), PTZOptics, Panasonic, Sony, Lumens, Marshall, JVC  
 **Encoders / Converters:** Magewell, Kiloview, AJA, Epiphan  
 **Production:** Vizrt TriCaster, vMix, OBS (via DistroAV), mimoLive, Ross Carbonite  
 **Network:** NETGEAR AV Line, Yamaha SWX/SWR switches
 
 ### Open Source (NDI ecosystem)
 
-NDI itself is not open protocol, but these OSS tools integrate with it:
+NDI wire protocol is closed. OSS tools wrap the NDI SDK:
 
-- [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) — OBS plugin for NDI send/receive (formerly OBS-NDI)
-- [obsproject/obs-studio](https://github.com/obsproject/obs-studio) — Production software with WHIP/SRT; NDI via DistroAV
-- [FFmpeg](https://github.com/FFmpeg/FFmpeg) — `libndi` integration via third-party builds (not in mainline)
+| Project | Language | NDI SDK | Last Active | Notes |
+|---------|----------|---------|-------------|-------|
+| [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) | C++ | Runtime 6.3+ | Jun 2026 | OBS plugin (GPL-2.0); 4.5k★ |
+| [GrantSparks/grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | Rust | NDI 6 SDK | Jun 2026 | Idiomatic bindings; Tokio/async; PTZ; ~53k crates.io downloads |
+| [obsproject/obs-studio](https://github.com/obsproject/obs-studio) | C | Via DistroAV | Aug 2026 | Production host |
+
+**grafton-ndi** highlights:
+- Safe Rust FFI over NDI 6 SDK (discovery, send, receive, FrameSync, tally, PTZ)
+- Optional Tokio / async-std wrappers
+- Self-hosted docs (NDI license prevents docs.rs hosting)
+- Companion: [grafton-birddog](https://github.com/GrantSparks/grafton-birddog) for BirdDog camera API
 
 ---
 
@@ -285,9 +367,11 @@ A consolidated index of open-source AV over IP implementations, grouped by proto
 
 ### NDI
 
-| Project | Description |
-|---------|-------------|
-| [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) | OBS plugin for NDI (GPL-2.0); requires NDI Runtime |
+| Project | Description | Activity |
+|---------|-------------|----------|
+| [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) | OBS plugin for NDI (GPL-2.0); requires NDI Runtime 6.3+ | ★★★★☆ (4.5k★, Jun 2026) |
+| [GrantSparks/grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | Idiomatic Rust bindings for NDI 6 SDK; async, PTZ, FrameSync | ★★★☆☆ (33★, v1.0.0 Jun 2026) |
+| [GrantSparks/grafton-birddog](https://github.com/GrantSparks/grafton-birddog) | Rust bindings for BirdDog camera API | Companion to grafton-ndi |
 
 ### OMT
 
