@@ -153,31 +153,7 @@ This differs from running N independent TCP connections (NDI 1) or N independent
 - Linux: GSO / `UDP_SEGMENT` (kernel 4.18+) for send batching
 - Packet coalescing on receive to reduce per-packet overhead
 
-### 3.4 RUDP vs QUIC — Is NDI "QUIC-like"?
-
-**Short answer:** Conceptually similar goals; **not** IETF QUIC and **not** wire-compatible.
-
-| Dimension | NDI RUDP | IETF QUIC (RFC 9000) |
-|-----------|----------|----------------------|
-| Standardization | Proprietary (Vizrt NDI) | IETF open standard |
-| Primary use | LAN live video production | General internet transport; HTTP/3 |
-| Connection model | One aggregate CC context per NDI source | Connection with many bidirectional streams |
-| Reliability | Sequence numbers + selective ARQ | Per-stream + connection-level loss recovery |
-| Congestion control | Custom; aggregate across all NDI streams from source | Pluggable (RFC 9002); typically per-connection |
-| Encryption | Not TLS-integrated | Mandatory TLS 1.3 |
-| Handshake | NDI-specific (within SDK) | QUIC transport + TLS 1.3 (1-RTT / 0-RTT) |
-| NAT traversal | LAN-first; NDI Bridge for remote | Designed for internet path migration |
-| Multiplexing | All source streams share one CC pipe | Independent stream flow control within connection |
-
-**Why people say "QUIC-like":**
-1. Both run reliability on top of UDP instead of TCP
-2. Both multiplex multiple logical streams without head-of-line blocking
-3. Both implement modern congestion control (vs naive TCP over high-BDP links)
-4. Third-party articles (e.g. [AVNetwork 2021](https://www.avnetwork.com/news/how-ndi-5-impacts-avoip-remote-live-production)) have explicitly called RUDP "QUIC" — this is **not supported by official NDI technical documentation**, which never references RFC 9000 or QUIC by name
-
-**Practical implication:** You cannot point a QUIC client at an NDI source. NDI Bridge / Remote handle WAN traversal with NDI's own stack, not standard QUIC.
-
-### 3.5 Codec Profiles
+### 3.4 Codec Profiles
 
 | Profile | Codec | 1080p60 bandwidth | Notes |
 |---------|-------|-------------------|-------|
@@ -186,7 +162,7 @@ This differs from running N independent TCP connections (NDI 1) or N independent
 | HX2 | H.264 (improved) | ~6–10 Mbps | HX successor |
 | HX3 | H.265/HEVC | ~4–8 Mbps | Advanced SDK; passthrough on supported hardware |
 
-### 3.6 Standard SDK vs Advanced SDK
+### 3.5 Standard SDK vs Advanced SDK
 
 | Capability | Standard SDK | Advanced SDK |
 |------------|-------------|--------------|
@@ -203,7 +179,7 @@ This differs from running N independent TCP connections (NDI 1) or N independent
 
 Sources: [SDK vs Advanced FAQ](https://docs.ndi.video/all/faq/sdk/what-are-the-differences-between-the-ndi-sdk-and-the-ndi-advanced-sdk), [Advanced SDK docs](https://docs.ndi.video/all/developing-with-ndi/advanced-sdk)
 
-### 3.7 Open Source Ecosystem
+### 3.6 Open Source Ecosystem
 
 | Repo | Role | Notes |
 |------|------|-------|
@@ -213,9 +189,9 @@ Sources: [SDK vs Advanced FAQ](https://docs.ndi.video/all/faq/sdk/what-are-the-d
 
 No independent open-source NDI protocol implementation exists — all tools require the proprietary NDI SDK/Runtime.
 
-### 3.8 Activity Snapshot (Aug 2026)
+### 3.7 Activity Snapshot (Aug 2026)
 
-See [`activity.md`](activity.md#ndi) for full metrics. Summary: **5/5 activity score** — NDI 6.3 shipped Jan 2026, 600+ vendors, DistroAV and grafton-ndi actively maintained.
+See [`activity.md`](activity.md#ndi). NDI 6.3 shipped Jan 2026; 600+ vendors; DistroAV and grafton-ndi actively maintained.
 
 ---
 
@@ -301,6 +277,8 @@ Traditional WebRTC lacked standardized server ingest/egress signaling. WHIP/WHEP
 - FFmpeg: WHIP/WHEP in development
 - Cloudflare, Red5, Dolby OptiView: cloud WHIP/WHEP
 - Larix Broadcaster: mobile WHIP
+
+**Activity:** 5/5 score — see [`activity.md`](activity.md#webrtc). WHIP RFC 9725 (2025); mediamtx/pion highly active.
 
 ---
 

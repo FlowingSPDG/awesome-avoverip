@@ -14,10 +14,6 @@ Point-in-time snapshot for comparing how active and widely adopted each AV over 
 | **Adoption** | Market penetration, product count, real-world deployment scale |
 | **Dev Activity** | Recent releases, spec updates, SDK churn |
 | **OSS Activity** | Open-source repo commits, releases, community size |
-| **Momentum** | Overall trajectory (↑ growing, → stable, ↓ declining/niche) |
-| **Activity Score** | Subjective 1–5 composite (5 = most active in its category) |
-
-Scores are **relative within AV over IP**, not absolute quality ratings. A score of 3 for ST 2110 in Pro AV broadcast is still "industry standard" — it reflects pace of change, not importance.
 
 ### Data Sources
 
@@ -30,17 +26,17 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 
 ## Summary Dashboard
 
-| Protocol | Category | Adoption | Dev Activity | OSS Activity | Momentum | Score |
-|----------|----------|----------|--------------|--------------|----------|-------|
-| [NDI](#ndi) | LAN video | ★★★★★ | ★★★★★ | ★★★☆☆ | ↑ | **5/5** |
-| [OMT](#omt) | LAN video | ★☆☆☆☆ | ★★★★☆ | ★★★☆☆ | ↑↑ | **3/5** |
-| [ST 2110](#st-2110) | Broadcast IP | ★★★★★ | ★★★★☆ | ★★★☆☆ | ↑ | **4/5** |
-| [IPMX](#ipmx) | Pro AV (open) | ★★☆☆☆ | ★★★★☆ | ★★☆☆☆ | ↑↑ | **3/5** |
-| [SRT](#srt) | WAN contribution | ★★★★★ | ★★★★☆ | ★★★★★ | → | **5/5** |
-| [RIST](#rist) | WAN contribution | ★★★★☆ | ★★★☆☆ | ★★★★☆ | ↑ | **4/5** |
-| [WebRTC/WHIP/WHEP](#webrtc) | Browser / cloud | ★★★★★ | ★★★★★ | ★★★★★ | ↑ | **5/5** |
-| [Dante](#dante) | Audio AoIP | ★★★★★ | ★★★★☆ | ★☆☆☆☆ | → | **4/5** |
-| [SDVoE](#sdvoe) | LAN HDMI | ★★★★☆ | ★★★☆☆ | ★☆☆☆☆ | → | **3/5** |
+| Protocol | Category | Adoption | Dev Activity | OSS Activity |
+|----------|----------|----------|--------------|--------------|
+| [NDI](#ndi) | LAN video | High | High | Medium |
+| [OMT](#omt) | LAN video | Low | High | Medium |
+| [ST 2110](#st-2110) | Broadcast IP | High | High | Medium |
+| [IPMX](#ipmx) | Pro AV (open) | Low | High | Low |
+| [SRT](#srt) | WAN contribution | High | High | High |
+| [RIST](#rist) | WAN contribution | High | Medium | High |
+| [WebRTC/WHIP/WHEP](#webrtc) | Browser / cloud | High | High | High |
+| [Dante](#dante) | Audio AoIP | High | High | Low |
+| [SDVoE](#sdvoe) | LAN HDMI | High | Medium | None |
 
 ---
 
@@ -63,7 +59,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | [GrantSparks/grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | 33 | 2026-06-15 | v1.0.0 (2026-06) | Rust NDI 6 SDK bindings; ~53k crates.io downloads |
 | [obsproject/obs-studio](https://github.com/obsproject/obs-studio) | 75,046 | 2026-08-15 | — | NDI via DistroAV plugin |
 
-**OSS verdict:** NDI protocol is closed, but the **integration layer** is active (DistroAV, grafton-ndi). grafton-ndi is the most actively maintained third-party SDK wrapper (Rust, NDI 6).
+**OSS notes:** NDI protocol is closed, but the **integration layer** is active (DistroAV, grafton-ndi). grafton-ndi is the most actively maintained third-party SDK wrapper (Rust, NDI 6).
 
 ---
 
@@ -89,7 +85,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | [MikanseiLaboratory/vmx-rs](https://github.com/MikanseiLaboratory/vmx-rs) | 1 | 2026-08-12 | — | Community Rust codec |
 | [MikanseiLaboratory/omt-tools](https://github.com/MikanseiLaboratory/omt-tools) | 4 | 2026-08-12 | — | Tauri tooling |
 
-**OSS verdict:** Very young but **high commit velocity** on official repos (multiple pushes/week in mid-2026). Ecosystem size is tiny vs NDI; momentum is strong for a 1-year-old protocol.
+**OSS notes:** Very young but **high commit velocity** on official repos (multiple pushes/week in mid-2026). Ecosystem size is tiny vs NDI.
 
 ---
 
@@ -112,7 +108,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | [sony/nmos-cpp](https://github.com/sony/nmos-cpp) | 188 | 2026-08-13 | NMOS registry/node; IS-04/05 |
 | [AMWA-TV/nmos-testing](https://github.com/AMWA-TV/nmos-testing) | 66 | 2026-08-07 | Official conformance tool |
 
-**OSS verdict:** Standards body activity is high (annual revisions). OSS focuses on **infrastructure plumbing** (MTL, NMOS), not end-user apps. Mature, steady growth.
+**OSS notes:** Standards body activity is high (annual revisions). OSS focuses on **infrastructure plumbing** (MTL, NMOS), not end-user apps.
 
 ---
 
@@ -125,7 +121,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | **Certified vendors** | PlexusAV, Barco, Lawo, Matrox (early) | AIMS / AMWA / VSF / EBU program |
 | **Shipped products** | Early adopter stage | Growing at ISE/NAB 2026 |
 
-**OSS verdict:** Spec activity high; product count still low. **Fastest-growing open Pro AV video standard** but from a small base. Score reflects momentum, not current install base.
+**Notes:** Spec activity high; product count still low. Early adopter stage for certified products.
 
 ---
 
@@ -148,7 +144,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 
 **Release cadence:** 3 releases in 2026 (v1.5.4 → v1.5.6), steady maintenance.
 
-**OSS verdict:** Mature, heavily used, actively maintained reference implementation. De facto WAN contribution standard alongside RIST.
+**OSS notes:** Mature, heavily used, actively maintained reference implementation.
 
 ---
 
@@ -169,7 +165,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | [librist](https://code.videolan.org/rist/librist) | VideoLAN GitLab | Canonical; BSD-2-Clause |
 | [nanake/librist](https://github.com/nanake/librist) | GitHub mirror | Sync mirror |
 
-**OSS verdict:** Active integration into major media tools. Spec evolution slower than SRT but strong broadcast vendor backing. Growing in contribution workflows.
+**OSS notes:** Active integration into major media tools. Spec evolution slower than SRT but strong broadcast vendor backing.
 
 ---
 
@@ -192,7 +188,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | [obsproject/obs-studio](https://github.com/obsproject/obs-studio) | 75,046 | 2026-08-15 | WHIP output |
 | [FFmpeg/FFmpeg](https://github.com/FFmpeg/FFmpeg) | 63,332 | 2026-08-15 | WHIP/WHEP in progress |
 
-**OSS verdict:** Highest OSS velocity in this list. WHIP/WHEP standardization unlocked a wave of interoperable tooling in 2024–2026.
+**OSS notes:** High OSS velocity. WHIP/WHEP standardization drove interoperable tooling in 2024–2026.
 
 ---
 
@@ -205,7 +201,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | **Dante AV (video)** | Limited (AJA-centric) | Niche vs NDI/SDVoE |
 | **AES67 mode** | Available on most devices | Interop bridge |
 
-**OSS verdict:** Dominant in audio; almost no open protocol implementation (proprietary). Activity is vendor-driven, not community OSS.
+**Notes:** Dominant in audio; almost no open protocol implementation (proprietary). Activity is vendor-driven.
 
 ---
 
@@ -218,7 +214,7 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 | **Differentiator** | <100 μs latency, lossless 4K60, 10GbE | Semtech BlueRiver |
 | **OSS** | None (closed API/SDK) | Alliance-licensed |
 
-**OSS verdict:** Stable Pro AV niche (meeting rooms, high-end AV). No public spec or OSS. Momentum flat but install base solid.
+**Notes:** Stable Pro AV niche. No public spec or OSS.
 
 ---
 
@@ -246,6 +242,6 @@ Scores are **relative within AV over IP**, not absolute quality ratings. A score
 1. **GitHub `pushed_at`** reflects any branch activity, not just releases.
 2. **Stars** indicate awareness, not production usage.
 3. **Product counts** come from vendor self-reporting (NDI, AIMS) — treat as order-of-magnitude.
-4. Scores are updated manually; automate via CI if this repo grows.
+4. Metrics are updated manually; automate via CI if this repo grows.
 
 Contributions welcome — see [CONTRIBUTING.md](../CONTRIBUTING.md).

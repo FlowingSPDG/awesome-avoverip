@@ -43,17 +43,17 @@ Professional video and audio transport over IP networks spans many use cases —
 
 ## Protocol Activity
 
-| Protocol | Score | Momentum | Latest Release | Products / Scale |
-|----------|-------|----------|----------------|------------------|
-| NDI | 5/5 | ↑ | NDI 6.3 (Jan 2026) | 2,000+ products, 600+ vendors |
-| SRT | 5/5 | → | libsrt v1.5.6 (Jul 2026) | 650+ alliance members |
-| WebRTC/WHIP/WHEP | 5/5 | ↑ | RFC 9725 WHIP (2025) | Cloud + OBS native |
-| ST 2110 | 4/5 | ↑ | ST 2110-30:2025 | 100+ AIMS solutions |
-| RIST | 4/5 | ↑ | TR-06-3 (2022) | 150+ forum members |
-| Dante | 4/5 | → | Continuous | 400+ manufacturers |
-| OMT | 3/5 | ↑↑ | libomtnet v1.0.0.16 (Jun 2026) | vMix 29+, early adopters |
-| IPMX | 3/5 | ↑↑ | Certification began 2026 | Early certified products |
-| SDVoE | 3/5 | → | Stable since 2016 | 50+ alliance partners |
+| Protocol | Latest Release | Products / Scale |
+|----------|----------------|------------------|
+| NDI | NDI 6.3 (Jan 2026) | 2,000+ products, 600+ vendors |
+| SRT | libsrt v1.5.6 (Jul 2026) | 650+ alliance members |
+| WebRTC/WHIP/WHEP | RFC 9725 WHIP (2025) | Cloud + OBS native |
+| ST 2110 | ST 2110-30:2025 | 100+ AIMS solutions |
+| RIST | TR-06-3 (2022) | 150+ forum members |
+| Dante | Continuous | 400+ manufacturers |
+| OMT | libomtnet v1.0.0.16 (Jun 2026) | vMix 29+, early adopters |
+| IPMX | Certification began 2026 | Early certified products |
+| SDVoE | Stable since 2016 | 50+ alliance partners |
 
 Full metrics, OSS repo activity, and methodology: [`docs/activity.md`](docs/activity.md)
 
@@ -150,28 +150,11 @@ Among **ST 2001 / ST 2010 / ST 2101 / ST 2110**, their roles in AV over IP diffe
 | All | Multicast UDP+FEC | Optional fan-out; **disabled by default** (IGMP risk) |
 | All | TCP | Automatic fallback when peer lacks negotiated mode |
 
-### RUDP vs QUIC (investigation summary)
-
-NDI's RUDP is **not IETF QUIC** (RFC 9000). It is a **proprietary Reliable UDP** designed for LAN live production. Some third-party articles incorrectly equate RUDP with QUIC; official NDI documentation describes a custom protocol.
-
-| Aspect | NDI RUDP | IETF QUIC |
-|--------|----------|-----------|
-| Wire format | Proprietary (closed) | Standardized (RFC 9000) |
-| Runs on | UDP | UDP |
-| Reliability | Selective retransmit (sequence numbers) | Streams + loss recovery |
-| Congestion control | Multi-stream aggregate CC per source | Per-connection CC (BBR/Cubic) |
-| Multiplexing | All streams from one source → single connection | Multiple streams per connection |
-| Encryption | Not TLS-based | TLS 1.3 integrated |
-| HTTP/3 | No | Yes (native mapping) |
-| Design goal | LAN video at scale | General internet transport |
-
-**Conceptual similarity to QUIC:** Both solve "TCP is too slow for real-time media over UDP" by adding reliability, flow control, and congestion control on top of UDP. NDI RUDP's **aggregate multi-stream congestion control** (all NDI streams from one source share one CC context) is architecturally similar to QUIC's stream multiplexing — but the algorithms, handshake, and wire format are entirely different.
-
 Key RUDP behaviors ([official docs](https://docs.ndi.video/all/developing-with-ndi/sdk/performance-and-implementation)):
+- Aggregate multi-stream congestion control per source
 - Non-blocking streams: packet loss on one stream doesn't block others
 - Packet coalescing + async send batching (reduces kernel overhead)
 - USO (UDP Segmentation Offload) on Windows; GSO/UDP_SEGMENT on Linux 4.18+
-- Receiver-side scaling for interrupt handling
 
 **Official resources:**
 - [NDI Product Finder](https://ndi.video/product-finder/)
@@ -367,11 +350,11 @@ A consolidated index of open-source AV over IP implementations, grouped by proto
 
 ### NDI
 
-| Project | Description | Activity |
-|---------|-------------|----------|
-| [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) | OBS plugin for NDI (GPL-2.0); requires NDI Runtime 6.3+ | ★★★★☆ (4.5k★, Jun 2026) |
-| [GrantSparks/grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | Idiomatic Rust bindings for NDI 6 SDK; async, PTZ, FrameSync | ★★★☆☆ (33★, v1.0.0 Jun 2026) |
-| [GrantSparks/grafton-birddog](https://github.com/GrantSparks/grafton-birddog) | Rust bindings for BirdDog camera API | Companion to grafton-ndi |
+| Project | Description |
+|---------|-------------|
+| [DistroAV/DistroAV](https://github.com/DistroAV/DistroAV) | OBS plugin for NDI (GPL-2.0); requires NDI Runtime 6.3+ |
+| [GrantSparks/grafton-ndi](https://github.com/GrantSparks/grafton-ndi) | Idiomatic Rust bindings for NDI 6 SDK; async, PTZ, FrameSync |
+| [GrantSparks/grafton-birddog](https://github.com/GrantSparks/grafton-birddog) | Rust bindings for BirdDog camera API |
 
 ### OMT
 
